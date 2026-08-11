@@ -19,12 +19,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-        </activitY> 
-            
+        </activity>
+
         <service
-    android:name=".FloatingService"
-    android:exported="false"
-    android:foregroundServiceType="mediaProjection" />
+            android:name=".FloatingService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
 
     </application>
 
