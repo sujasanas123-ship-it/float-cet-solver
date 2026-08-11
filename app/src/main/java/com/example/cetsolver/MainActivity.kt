@@ -2,7 +2,6 @@ package com.example.cetsolver
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Button
@@ -24,40 +23,59 @@ class MainActivity : Activity() {
             textSize = 24f
         }
 
-        val info = TextView(this).apply {
-            text = """
-                CET Solver is ready.
-
-                First allow the app to display over other apps.
-                Then the floating solver can be enabled.
-            """.trimIndent()
+        val message = TextView(this).apply {
+            text = "Allow floating-window permission, then start the solver."
             textSize = 16f
             setPadding(0, 24, 0, 24)
         }
 
-        val overlayButton = Button(this).apply {
-            text = "Allow Floating Overlay"
+        val permissionButton = Button(this).apply {
+            text = "Allow Floating Window"
             setOnClickListener {
                 if (!Settings.canDrawOverlays(this@MainActivity)) {
-                    val intent = Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:$packageName")
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            android.net.Uri.parse("package:$packageName")
+                        )
                     )
-                    startActivity(intent)
                 }
             }
         }
 
-        val closeButton = Button(this).apply {
-            text = "Close"
-            setOnClickListener { finish() }
+        val startButton = Button(this).apply {
+            text = "Start Floating Button"
+            setOnClickListener {
+                if (Settings.canDrawOverlays(this@MainActivity)) {
+                    startService(
+                        Intent(
+                            this@MainActivity,
+                            FloatingService::class.java
+                        )
+                    )
+                } else {
+                    permissionButton.performClick()
+                }
+            }
+        }
+
+        val stopButton = Button(this).apply {
+            text = "Stop Floating Button"
+            setOnClickListener {
+                stopService(
+                    Intent(this@MainActivity, FloatingService::class.java)
+                )
+            }
         }
 
         layout.addView(title)
-        layout.addView(info)
-        layout.addView(overlayButton)
-        layout.addView(closeButton)
+        layout.addView(message)
+        layout.addView(permissionButton)
+        layout.addView(startButton)
+        layout.addView(stopButton)
 
         setContentView(layout)
     }
 }
+
+         
