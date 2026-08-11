@@ -1,0 +1,34 @@
+Create an Android app called "Floating CET Solver".
+
+IMPORTANT: This app is for studying/practice questions, not for cheating during a live/proctored exam.
+
+Target Android phones. Use React Native/Expo where possible, but native Android modules are required for the overlay and screen-capture features.
+
+Core flow:
+1. On first launch, show a setup screen.
+2. Let the user enter their own OpenAI API key locally. Never hard-code a key into the source and never include a shared key.
+3. Explain that direct client-side API keys are less secure than a server and that the user should use their own key.
+4. Ask for Android "Display over other apps" permission.
+5. Ask for Android MediaProjection/screen-capture permission.
+6. Start a foreground service and show a small movable floating button with a brain icon.
+7. When the user taps the floating button, show a transparent full-screen selection layer.
+8. The user drags a rectangle around a CET practice question.
+9. Capture the screen with MediaProjection, crop the selected rectangle, encode it as PNG/JPEG.
+10. Send the image directly to the OpenAI Responses API using the user's locally stored API key.
+11. Ask the model to solve the practice question, identify the correct option if choices are visible, and provide a concise step-by-step explanation. Tell the model not to invent missing information.
+12. Show the result in a small movable overlay card above the current app/page.
+13. The card must have minimize, close, and copy buttons.
+14. Include clear error messages for missing API key, denied screen capture, overlay permission denied, no network, API authentication failure, rate limit, and invalid API response.
+15. Include a Settings screen to change/delete the API key and stop the floating service.
+16. Do not collect analytics, do not upload screenshots anywhere except the configured OpenAI API request, and do not log the API key.
+17. Make the UI compact and usable on small Android screens.
+
+Technical requirements:
+- Android 8+.
+- Proper AndroidManifest permissions for SYSTEM_ALERT_WINDOW, INTERNET, FOREGROUND_SERVICE and the appropriate MediaProjection foreground-service type.
+- Handle Android version differences for MediaProjection and foreground services.
+- Use secure local storage for the user's API key if the chosen stack supports it; otherwise use Android Keystore-backed encrypted storage through a native module.
+- Never hard-code API credentials.
+- The app must be buildable as a signed APK through the platform's cloud build.
+- Include a README explaining permissions, API-key safety, and how to build/download the APK.
+- If a requested native feature is not supported by managed Expo, use an Expo prebuild/custom native module or bare React Native approach rather than pretending it works.
