@@ -11,6 +11,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import android.widget.Toast
 
 class FloatingService : Service() {
 
@@ -61,6 +62,7 @@ class FloatingService : Service() {
                 private var startY = 0
                 private var touchX = 0f
                 private var touchY = 0f
+                private var moved = false
 
                 override fun onTouch(
                     view: View?,
@@ -74,16 +76,25 @@ class FloatingService : Service() {
                             startY = params.y
                             touchX = event.rawX
                             touchY = event.rawY
+                            moved = false
                             return true
                         }
 
                         MotionEvent.ACTION_MOVE -> {
 
+                            val dx = event.rawX - touchX
+                            val dy = event.rawY - touchY
+
+                            if (kotlin.math.abs(dx) > 10 ||
+                                kotlin.math.abs(dy) > 10) {
+                                moved = true
+                            }
+
                             params.x =
-                                startX - (event.rawX - touchX).toInt()
+                                startX - dx.toInt()
 
                             params.y =
-                                startY + (event.rawY - touchY).toInt()
+                                startY + dy.toInt()
 
                             try {
                                 windowManager?.updateViewLayout(
@@ -97,6 +108,15 @@ class FloatingService : Service() {
                         }
 
                         MotionEvent.ACTION_UP -> {
+
+                            if (!moved) {
+                                Toast.makeText(
+                                    this@FloatingService,
+                                    "CET bubble tapped!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
                             return true
                         }
                     }
