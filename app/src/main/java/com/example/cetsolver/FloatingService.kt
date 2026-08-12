@@ -1,9 +1,15 @@
 package com.example.cetsolver
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.view.Gravity
@@ -17,6 +23,7 @@ class FloatingService : Service() {
 
     private var windowManager: WindowManager? = null
     private var bubble: TextView? = null
+    private var mediaProjection: MediaProjection? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -26,7 +33,41 @@ class FloatingService : Service() {
             return
         }
 
+        startForegroundServiceNotification()
         showBubble()
+    }
+
+    private fun startForegroundServiceNotification() {
+        val channelId = "cet_solver_channel"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "CET Solver",
+                NotificationManager.IMPORTANCE_LOW
+            )
+
+            val manager =
+                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+            manager.createNotificationChannel(channel)
+        }
+
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, channelId)
+                .setContentTitle("Floating CET Solver")
+                .setContentText("Screen scanning is ready")
+                .setSmallIcon(android.R.drawable.ic_menu_search)
+                .build()
+        } else {
+            Notification.Builder(this)
+                .setContentTitle("Floating CET Solver")
+                .setContentText("Screen scanning is ready")
+                .setSmallIcon(android.R.drawable.ic_menu_search)
+                .build()
+        }
+
+        startForeground(1001, notification)
     }
 
     private fun showBubble() {
@@ -86,15 +127,13 @@ class FloatingService : Service() {
                             val dy = event.rawY - touchY
 
                             if (kotlin.math.abs(dx) > 10 ||
-                                kotlin.math.abs(dy) > 10) {
+                                kotlin.math.abs(dy) > 10
+                            ) {
                                 moved = true
                             }
 
-                            params.x =
-                                startX - dx.toInt()
-
-                            params.y =
-                                startY + dy.toInt()
+                            params.x = startX - dx.toInt()
+                            params.y = startY + dy.toInt()
 
                             try {
                                 windowManager?.updateViewLayout(
@@ -110,11 +149,7 @@ class FloatingService : Service() {
                         MotionEvent.ACTION_UP -> {
 
                             if (!moved) {
-                                Toast.makeText(
-                                    this@FloatingService,
-                                    "CET bubble tapped!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                scanScreen()
                             }
 
                             return true
@@ -134,6 +169,56 @@ class FloatingService : Service() {
         }
     }
 
+    private fun scanScreen() {
+
+        if (mediaProjection == null) {
+            Toast.makeText(
+                this,
+                "Screen capture is not connected yet.",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        Toast.makeText(
+            this,
+            "Screen scan started!",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int
+    ): Int {
+
+        if (intent != null) {
+
+            val resultCode =
+                intent.getIntExtra("resultCode", -1)
+
+            val data =
+                intent.getParcelableExtra<Intent>("data")
+
+            if (resultCode != -1 && data != null) {
+
+                val manager =
+                    getSystemService(
+                        MEDIA_PROJECTION_SERVICE
+                    ) as MediaProjectionManager
+
+                mediaProjection =
+                    manager.getMediaProjection(
+                        resultCode,
+                        data
+                    )
+            }
+        }
+
+        return START_NOT_STICKY
+    }
+
     override fun onDestroy() {
 
         bubble?.let {
@@ -143,8 +228,11 @@ class FloatingService : Service() {
             }
         }
 
+        mediaProjection?.stop()
+
         bubble = null
         windowManager = null
+        mediaProjection = null
 
         super.onDestroy()
     }
