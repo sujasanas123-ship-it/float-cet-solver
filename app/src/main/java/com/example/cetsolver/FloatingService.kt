@@ -33,41 +33,99 @@ class FloatingService : Service() {
             return
         }
 
-        startForegroundServiceNotification()
+        createNotificationChannel()
         showBubble()
     }
 
-    private fun startForegroundServiceNotification() {
-        val channelId = "cet_solver_channel"
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int
+    ): Int {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                1001,
+                createNotification(),
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            )
+        } else {
+            startForeground(1001, createNotification())
+        }
+
+        if (intent != null) {
+            val resultCode =
+                intent.getIntExtra("resultCode", -1)
+
+            val data =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(
+                        "data",
+                        Intent::class.java
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra<Intent>("data")
+                }
+
+            if (resultCode == RESULT_OK && data != null) {
+
+                val manager =
+                    getSystemService(
+                        MEDIA_PROJECTION_SERVICE
+                    ) as MediaProjectionManager
+
+                mediaProjection =
+                    manager.getMediaProjection(
+                        resultCode,
+                        data
+                    )
+            }
+        }
+
+        return START_NOT_STICKY
+    }
+
+    private fun createNotificationChannel() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
             val channel = NotificationChannel(
-                channelId,
+                "cet_solver_channel",
                 "CET Solver",
                 NotificationManager.IMPORTANCE_LOW
             )
 
             val manager =
-                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                getSystemService(
+                    NOTIFICATION_SERVICE
+                ) as NotificationManager
 
             manager.createNotificationChannel(channel)
         }
+    }
 
-        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, channelId)
+    private fun createNotification(): Notification {
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            Notification.Builder(
+                this,
+                "cet_solver_channel"
+            )
                 .setContentTitle("Floating CET Solver")
                 .setContentText("Screen scanning is ready")
                 .setSmallIcon(android.R.drawable.ic_menu_search)
                 .build()
+
         } else {
+
             Notification.Builder(this)
                 .setContentTitle("Floating CET Solver")
                 .setContentText("Screen scanning is ready")
                 .setSmallIcon(android.R.drawable.ic_menu_search)
                 .build()
         }
-
-        startForeground(1001, notification)
     }
 
     private fun showBubble() {
@@ -126,14 +184,18 @@ class FloatingService : Service() {
                             val dx = event.rawX - touchX
                             val dy = event.rawY - touchY
 
-                            if (kotlin.math.abs(dx) > 10 ||
+                            if (
+                                kotlin.math.abs(dx) > 10 ||
                                 kotlin.math.abs(dy) > 10
                             ) {
                                 moved = true
                             }
 
-                            params.x = startX - dx.toInt()
-                            params.y = startY + dy.toInt()
+                            params.x =
+                                startX - dx.toInt()
+
+                            params.y =
+                                startY + dy.toInt()
 
                             try {
                                 windowManager?.updateViewLayout(
@@ -162,7 +224,10 @@ class FloatingService : Service() {
         )
 
         try {
-            windowManager?.addView(bubble, params)
+            windowManager?.addView(
+                bubble,
+                params
+            )
         } catch (_: Exception) {
             bubble = null
             stopSelf()
@@ -172,51 +237,21 @@ class FloatingService : Service() {
     private fun scanScreen() {
 
         if (mediaProjection == null) {
+
             Toast.makeText(
                 this,
-                "Screen capture is not connected yet.",
+                "Screen capture is not connected.",
                 Toast.LENGTH_SHORT
             ).show()
+
             return
         }
 
         Toast.makeText(
             this,
-            "Screen scan started!",
+            "Screen capture connected!",
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    override fun onStartCommand(
-        intent: Intent?,
-        flags: Int,
-        startId: Int
-    ): Int {
-
-        if (intent != null) {
-
-            val resultCode =
-                intent.getIntExtra("resultCode", -1)
-
-            val data =
-                intent.getParcelableExtra<Intent>("data")
-
-            if (resultCode != -1 && data != null) {
-
-                val manager =
-                    getSystemService(
-                        MEDIA_PROJECTION_SERVICE
-                    ) as MediaProjectionManager
-
-                mediaProjection =
-                    manager.getMediaProjection(
-                        resultCode,
-                        data
-                    )
-            }
-        }
-
-        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -237,7 +272,9 @@ class FloatingService : Service() {
         super.onDestroy()
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(
+        intent: Intent?
+    ): IBinder? {
         return null
     }
 }
