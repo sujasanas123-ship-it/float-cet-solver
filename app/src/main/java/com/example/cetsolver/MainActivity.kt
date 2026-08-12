@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Button
@@ -30,7 +31,7 @@ class MainActivity : Activity() {
         }
 
         val message = TextView(this).apply {
-            text = "Allow floating window permission, then start the solver."
+            text = "Allow floating-window permission, then start the solver."
             textSize = 16f
             setPadding(0, 24, 0, 24)
         }
@@ -99,7 +100,8 @@ class MainActivity : Activity() {
     ) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == SCREEN_CAPTURE_REQUEST &&
+        if (
+            requestCode == SCREEN_CAPTURE_REQUEST &&
             resultCode == RESULT_OK &&
             data != null
         ) {
@@ -111,7 +113,11 @@ class MainActivity : Activity() {
                 putExtra("data", data)
             }
 
-            startService(serviceIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
         }
     }
 }
